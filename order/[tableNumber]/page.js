@@ -1,23 +1,17 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, use } from 'react'
 import { supabase } from '../../../lib/supabaseClient'
 
 export default function OrderPage({ params }) {
-  const [tableNumber, setTableNumber] = useState(null)
+  // แก้ไขจุดแครช: แกะค่า Promise จาก params ด้วย use()
+  const resolvedParams = use(params)
+  const tableNumber = resolvedParams?.tableNumber
+
   const [session, setSession] = useState(null)
   const [categories, setCategories] = useState([])
   const [menuItems, setMenuItems] = useState([])
   const [cart, setCart] = useState([])
   const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    // ดึง tableNumber จาก params แบบปลอดภัย
-    Promise.resolve(params).then((resolvedParams) => {
-      if (resolvedParams && resolvedParams.tableNumber) {
-        setTableNumber(resolvedParams.tableNumber)
-      }
-    })
-  }, [params])
 
   useEffect(() => {
     if (tableNumber) {
@@ -27,7 +21,6 @@ export default function OrderPage({ params }) {
 
   const fetchData = async () => {
     try {
-      // 1. ดึง Session
       const { data: sessionData } = await supabase
         .from('sessions')
         .select('*')
@@ -40,7 +33,6 @@ export default function OrderPage({ params }) {
         setSession(sessionData[0])
       }
 
-      // 2. ดึงหมวดหมู่และเมนู
       const { data: catData } = await supabase.from('menu_categories').select('*').order('sort_order')
       const { data: itemData } = await supabase.from('menu_items').select('*').eq('is_available', true)
 
@@ -64,11 +56,12 @@ export default function OrderPage({ params }) {
 
   const submitOrder = async () => {
     if (cart.length === 0) return alert('กรุณาเลือกอาหารก่อนครับ')
-    if (!session) return alert('ไม่พบ Session โต๊ะที่เปิดอยู่ (กรุณาสร้าง QR Code ใหม่)')
+
+    const sessionId = session ? session.id : null
 
     const { data: orderData, error: orderError } = await supabase
       .from('orders')
-      .insert([{ session_id: session.id, status: 'pending' }])
+      .insert([{ session_id: sessionId, status: 'pending' }])
       .select()
 
     if (orderError) return alert('เกิดข้อผิดพลาด: ' + orderError.message)
