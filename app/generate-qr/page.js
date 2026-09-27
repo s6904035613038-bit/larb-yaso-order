@@ -13,10 +13,10 @@ export default function GenerateQR() {
     e.preventDefault()
     setLoading(true)
 
-    // บันทึก Session ลง Database
+    // บันทึก Session ลง Database (ใช้ชื่อคอลัมน์ adult_count)
     const { data, error } = await supabase
       .from('sessions')
-      .insert([{ table_number: tableNumber, num_adults: parseInt(adults) }])
+      .insert([{ table_number: parseInt(tableNumber), adult_count: parseInt(adults) }])
       .select()
 
     setLoading(false)
@@ -24,7 +24,7 @@ export default function GenerateQR() {
     if (error) {
       alert('เกิดข้อผิดพลาด: ' + error.message)
     } else {
-      // สร้าง URL สำหรับสั่งอาหารจริง
+      // สร้าง URL สำหรับสั่งอาหาร
       const fullUrl = `${window.location.origin}/order/${tableNumber}`
       setOrderUrl(fullUrl)
     }
@@ -38,7 +38,7 @@ export default function GenerateQR() {
         <div>
           <label>หมายเลขโต๊ะ:</label>
           <input
-            type="text"
+            type="number"
             required
             value={tableNumber}
             onChange={(e) => setTableNumber(e.target.value)}
@@ -66,15 +66,15 @@ export default function GenerateQR() {
         <div style={{ marginTop: '30px', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
           <h3>โต๊ะที่ {tableNumber}</h3>
           
-          {/* แสดงรูป QR Code */}
-          <div style={{ margin: '20px 0' }}>
+          {/* รูปภาพ QR Code */}
+          <div style={{ margin: '20px 0', display: 'flex', justifyContent: 'center' }}>
             <QRCodeSVG value={orderUrl} size={200} />
           </div>
 
           <p style={{ wordBreak: 'break-all', fontSize: '12px', color: '#666' }}>
             {orderUrl}
           </p>
-          <button onClick={() => window.print()} style={{ padding: '5px 15px', cursor: 'pointer' }}>
+          <button onClick={() => window.print()} style={{ padding: '8px 16px', cursor: 'pointer' }}>
             พิมพ์ QR Code
           </button>
         </div>
