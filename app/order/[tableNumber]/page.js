@@ -15,7 +15,6 @@ export default function OrderPage({ params }) {
   }, [])
 
   const fetchData = async () => {
-    // 1. ดึง Session ของโต๊ะนี้ที่ยัง open อยู่
     const { data: sessionData } = await supabase
       .from('sessions')
       .select('*')
@@ -28,7 +27,6 @@ export default function OrderPage({ params }) {
       setSession(sessionData[0])
     }
 
-    // 2. ดึงหมวดหมู่และเมนู
     const { data: catData } = await supabase.from('menu_categories').select('*').order('sort_order')
     const { data: itemData } = await supabase.from('menu_items').select('*').eq('is_available', true)
 
@@ -50,7 +48,6 @@ export default function OrderPage({ params }) {
     if (cart.length === 0) return alert('กรุณาเลือกอาหารก่อนครับ')
     if (!session) return alert('ไม่พบ Session โต๊ะที่เปิดอยู่')
 
-    // สร้าง Order
     const { data: orderData, error: orderError } = await supabase
       .from('orders')
       .insert([{ session_id: session.id, status: 'pending' }])
@@ -58,7 +55,6 @@ export default function OrderPage({ params }) {
 
     if (orderError) return alert('เกิดข้อผิดพลาด: ' + orderError.message)
 
-    // บันทึกรายการอาหาร
     const orderId = orderData[0].id
     const orderItems = cart.map(item => ({
       order_id: orderId,
