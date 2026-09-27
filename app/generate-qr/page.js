@@ -1,82 +1,84 @@
-'use client';
+'use client'
+import { useState } from 'react'
+import { supabase } from '../../lib/supabaseClient'
+import { QRCodeSVG } from 'qrcode.react'
 
-import { useState } from 'react';
-import { supabase } from '../../lib/supabaseClient';
+export default function GenerateQR() {
+  const [tableNumber, setTableNumber] = useState('')
+  const [adults, setAdults] = useState('1')
+  const [orderUrl, setOrderUrl] = useState('')
+  const [loading, setLoading] = useState(false)
 
-export default function GenerateQrPage() {
-  const [tableNumber, setTableNumber] = useState('');
-  const [adultCount, setAdultCount] = useState(1);
-  const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const handleCreateSession = async (e) => {
+    e.preventDefault()
+    setLoading(true)
 
-  async function handleCreateSession(e) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const { data, error: insertError } = await supabase
+    // บันทึก Session ลง Database
+    const { data, error } = await supabase
       .from('sessions')
-      .insert({
-        table_number: tableNumber,
-        adult_count: Number(adultCount),
-        status: 'open',
-      })
+      .insert([{ table_number: tableNumber, num_adults: parseInt(adults) }])
       .select()
-      .single();
 
-    setLoading(false);
+    setLoading(false)
 
-    if (insertError) {
-      setError(insertError.message);
-      return;
+    if (error) {
+      alert('เกิดข้อผิดพลาด: ' + error.message)
+    } else {
+      // สร้าง URL สำหรับสั่งอาหารจริง
+      const fullUrl = `${window.location.origin}/order/${tableNumber}`
+      setOrderUrl(fullUrl)
     }
-
-    setSession(data);
   }
 
   return (
-    <main style={{ maxWidth: 480, margin: '2rem auto', padding: '1rem' }}>
-      <h1>สร้าง QR Code สำหรับโต๊ะ</h1>
-
-      <form onSubmit={handleCreateSession} style={{ display: 'grid', gap: '0.75rem' }}>
-        <label>
-          หมายเลขโต๊ะ
+    <div style={{ padding: '20px', maxWidth: '400px', margin: '0 auto', fontFamily: 'sans-serif', textAlign: 'center' }}>
+      <h2>สร้าง QR Code สำหรับโต๊ะ (ลาบยโส)</h2>
+      
+      <form onSubmit={handleCreateSession} style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left' }}>
+        <div>
+          <label>หมายเลขโต๊ะ:</label>
           <input
             type="text"
+            required
             value={tableNumber}
             onChange={(e) => setTableNumber(e.target.value)}
-            required
-            style={{ display: 'block', width: '100%', padding: '0.5rem' }}
+            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
           />
-        </label>
+        </div>
 
-        <label>
-          จำนวนผู้ใหญ่
+        <div>
+          <label>จำนวนผู้ใหญ่:</label>
           <input
             type="number"
-            min="1"
-            value={adultCount}
-            onChange={(e) => setAdultCount(e.target.value)}
             required
-            style={{ display: 'block', width: '100%', padding: '0.5rem' }}
+            value={adults}
+            onChange={(e) => setAdults(e.target.value)}
+            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
           />
-        </label>
+        </div>
 
-        <button type="submit" disabled={loading} style={{ padding: '0.6rem' }}>
-          {loading ? 'กำลังสร้าง...' : 'สร้าง Session'}
+        <button type="submit" disabled={loading} style={{ padding: '10px', marginTop: '10px', cursor: 'pointer' }}>
+          {loading ? 'กำลังสร้าง...' : 'สร้าง QR Code'}
         </button>
       </form>
 
-      {error && <p style={{ color: 'red' }}>เกิดข้อผิดพลาด: {error}</p>}
+      {orderUrl && (
+        <div style={{ marginTop: '30px', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
+          <h3>โต๊ะที่ {tableNumber}</h3>
+          
+          {/* แสดงรูป QR Code */}
+          <div style={{ margin: '20px 0' }}>
+            <QRCodeSVG value={orderUrl} size={200} />
+          </div>
 
-      {session && (
-        <div style={{ marginTop: '1.5rem' }}>
-          <p>สร้าง session สำเร็จ (id: {session.id})</p>
-          {/* TODO: แปลง session.id เป็น QR code จริง เช่นด้วยไลบรารี qrcode.react */}
-          <p>ลิงก์สั่งอาหาร: /order/{session.id}</p>
+          <p style={{ wordBreak: 'break-all', fontSize: '12px', color: '#666' }}>
+            {orderUrl}
+          </p>
+          <button onClick={() => window.print()} style={{ padding: '5px 15px', cursor: 'pointer' }}>
+            พิมพ์ QR Code
+          </button>
         </div>
       )}
-    </main>
-  );
+    </div>
+  )
 }
