@@ -1,17 +1,23 @@
 'use client'
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabaseClient'
 
-export default function OrderPage({ params: paramsPromise }) {
-  // แก้วิธีดึง tableNumber ให้รองรับ Vercel Production
-  const params = use(paramsPromise)
-  const tableNumber = params.tableNumber
-
+export default function OrderPage({ params }) {
+  const [tableNumber, setTableNumber] = useState(null)
   const [session, setSession] = useState(null)
   const [categories, setCategories] = useState([])
   const [menuItems, setMenuItems] = useState([])
   const [cart, setCart] = useState([])
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // ดึง tableNumber จาก params แบบปลอดภัย
+    Promise.resolve(params).then((resolvedParams) => {
+      if (resolvedParams && resolvedParams.tableNumber) {
+        setTableNumber(resolvedParams.tableNumber)
+      }
+    })
+  }, [params])
 
   useEffect(() => {
     if (tableNumber) {
